@@ -43,7 +43,14 @@
         text-align: center;
         font-size: 16px;
         padding: 15px 15px 15px 15px;
-        word-break:break-all;
+    }
+    #description {
+        position:relative;
+        z-index: 1;
+        text-align: center;
+        padding: 8px 32px 8px 32px;
+        color: #7ab317;
+        font-size: 20px;
     }
     label {
         position:relative;
@@ -176,6 +183,8 @@
         <img src="/static/peerpiper_512.png" alt="Logo" class="logo" id="logo" />
     </a>
 
+    <div id="description">Free, fast and simple P2P file transfer using WebTorrent.</div>
+
     <div id="uploadForm" class="box">
         <form onsubmit="return upload();">
             <input id="file" name="file" type="file">
@@ -292,6 +301,7 @@
 
         function goTransparent() {
             $("#logo").fadeTo("fast", 0.5);
+            $("#description").fadeTo("fast", 0.5);
             if (document.getElementById("uploadUrl").style["display"] != "none") {
                 $("#uploadUrl").fadeTo("fast", 0.5);
             }
@@ -303,6 +313,7 @@
 
         function goOpaque() {
             $("#logo").fadeTo("fast", 1);
+            $("#description").fadeTo("fast", 1);
             if (document.getElementById("uploadUrl").style["display"] != "none") {
                 $("#uploadUrl").fadeTo("fast", 1);
             }
@@ -312,10 +323,6 @@
                 $("#uploadStats").fadeTo("fast", 1);
             }
             $("#map").fadeTo("fast", 0.3);
-        }
-
-        function handlePayment(callback) {
-
         }
 
         function displayLoading() {

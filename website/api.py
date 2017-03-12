@@ -23,11 +23,3 @@ def api_v1_create():
     return {
         'key': h
     }
-
-@app.route("/api/v1/<key>")
-@json
-def api_v1_get(key):
-    if not g.db.exists(key):
-        return {"error": "not_found"}
-
-    return g.db.hgetall(key)
