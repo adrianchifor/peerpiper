@@ -1,0 +1,357 @@
+<!doctype html>
+<head>
+    <meta name="referrer" content="no-referrer" />
+    <title>Peer Piper</title>
+    <link rel="icon" href="/static/peerpiper_small.png">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Roboto:400">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/webtorrent/0.98.0/webtorrent.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCcGdcznOfOFRb3AynAihb8DBS99ky3dWI&callback=initMap" async defer></script>
+    <style type="text/css">
+    #map {
+        height: 100%;
+        width: 100%;
+        position:absolute;
+        top: 0;
+        left: 0;
+        z-index: 0;
+        opacity: 0.3;
+    }
+    h1, input::-webkit-input-placeholder, button, p {
+        font-family: 'roboto', sans-serif;
+        -webkit-transition: all 0.3s ease-in-out;
+        transition: all 0.3s ease-in-out;
+    }
+    h1 {
+        position:relative;
+        z-index: 1;
+        height: 50px;
+        width: 100%;
+        text-align: center;
+        font-size: 14px;
+        background: #7ab317;
+        margin-bottom: 30px;
+        color: white;
+        line-height: 150%;
+        border-radius: 3px 3px 0 0;
+        box-shadow: 0 2px 5px 1px rgba(0, 0, 0, 0.2);
+        box-sizing: border-box;
+        padding: 15px;
+    }
+    p {
+        position:relative;
+        z-index: 1;
+        text-align: center;
+        font-size: 16px;
+        padding: 15px 15px 15px 15px;
+        word-break:break-all;
+    }
+    #progress {
+        padding: 0px 25px 25px 25px;
+    }
+    .box {
+        position:relative;
+        z-index: 1;
+        background-color: #ffffff;
+        box-sizing: border-box;
+        width: 300px;
+        margin: 30px auto 0;
+        box-shadow: 2px 2px 5px 1px rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+    }
+    #downloadStats {
+        width: 150px;
+        display:none;
+    }
+    form {
+        position:relative;
+        z-index: 1;
+        padding-bottom: 30px;
+    }
+    input {
+        position:relative;
+        z-index: 1;
+        margin: 30px 40px;
+        width: 200px;
+        display: block;
+        border: none;
+        font-size: 14px;
+        padding: 30px 0px 12px 20px;
+        border-bottom: solid 1px #7ab317;
+        -webkit-transition: all 0.3s cubic-bezier(0.64, 0.09, 0.08, 1);
+        transition: all 0.3s cubic-bezier(0.64, 0.09, 0.08, 1);
+        background: -webkit-linear-gradient(top, rgba(255, 255, 255, 0) 96%, #7ab317 4%);
+        background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 96%, #7ab317 4%);
+        background-position: -250px 0;
+        background-size: 250px 100%;
+        background-repeat: no-repeat;
+        color: #7ab317;
+    }
+    input:focus, input:valid {
+        box-shadow: none;
+        outline: none;
+        background-position: 0 0;
+    }
+    input:focus::-webkit-input-placeholder, input:valid::-webkit-input-placeholder {
+        color: #7ab317;
+        font-size: 12px;
+        -webkit-transform: translateY(-20px);
+        transform: translateY(-20px);
+        visibility: visible !important;
+    }
+    button {
+        position:relative;
+        z-index: 1;
+        border: none;
+        font-size: 16px;
+        background: #7ab317;
+        cursor: pointer;
+        border-radius: 3px;
+        padding: 12px;
+        width: 150px;
+        color: white;
+        margin-left: 75px;
+        box-shadow: 0 3px 6px 0 rgba(0, 0, 0, 0.2);
+    }
+    button:hover {
+        -webkit-transform: translateY(-3px);
+        -ms-transform: translateY(-3px);
+        transform: translateY(-3px);
+        box-shadow: 0 6px 6px 0 rgba(0, 0, 0, 0.2);
+    }
+    .logo {
+        position:relative;
+        z-index: 1;
+        height: 100px;
+        width: 310px;
+        background: transparent;
+        display: block;
+        margin: 50px auto 50px auto;
+    }
+    .loader {
+        position:relative;
+        z-index: 1;
+        display:none;
+        margin-left: 128px;
+        border: 16px solid #f3f3f3;
+        border-top: 16px solid #7ab317;
+        border-radius: 50%;
+        width: 13px;
+        height: 13px;
+        animation: spin 2s linear infinite;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <a href="https://peerpiper.host">
+        <img src="/static/peerpiper_512.png" alt="Logo" class="logo" id="logo" />
+    </a>
+
+    <div id="downloadForm" class="box">
+        <form onsubmit="return download();">
+            <h1>{{ name }}</h1>
+            <div id="loading" class="loader"></div>
+            <button id="downloadButton">Download</button>
+        </form>
+    </div>
+
+    <div id="progressStats" style="display:none;" class="box">
+        <h1>{{ name }}</h1>
+        <p id="progress"></p>
+    </div>
+
+    <div id="downloadStats" class="box">
+        <p id="stats"></p>
+    </div>
+
+    <script>
+        var map;
+        var markers = [];
+        function initMap() {
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: {lat: 30.7971083, lng: -5.8214651},
+                zoom: 3,
+                disableDefaultUI: true, zoomControl: false, scrollwheel: false, disableDoubleClickZoom: true,
+                styles: [{"featureType":"administrative","elementType":"labels.text.fill","stylers":[{"color":"#444444"}]},{"featureType":"administrative.country","elementType":"geometry.stroke","stylers":[{"visibility":"on"},{"lightness":"68"},{"weight":"0.41"}]},{"featureType":"administrative.country","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"administrative.province","elementType":"all","stylers":[{"visibility":"on"}]},{"featureType":"administrative.province","elementType":"geometry.stroke","stylers":[{"visibility":"off"}]},{"featureType":"administrative.province","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"administrative.locality","elementType":"all","stylers":[{"visibility":"on"}]},{"featureType":"administrative.neighborhood","elementType":"all","stylers":[{"visibility":"off"}]},{"featureType":"administrative.land_parcel","elementType":"all","stylers":[{"visibility":"off"}]},{"featureType":"landscape","elementType":"all","stylers":[{"color":"#f2f2f2"},{"visibility":"off"}]},{"featureType":"landscape.man_made","elementType":"all","stylers":[{"visibility":"off"}]},{"featureType":"landscape.natural","elementType":"all","stylers":[{"visibility":"off"}]},{"featureType":"landscape.natural.terrain","elementType":"geometry.stroke","stylers":[{"visibility":"on"}]},{"featureType":"poi","elementType":"all","stylers":[{"visibility":"off"}]},{"featureType":"road","elementType":"all","stylers":[{"saturation":-100},{"lightness":45},{"visibility":"simplified"}]},{"featureType":"road.highway","elementType":"all","stylers":[{"visibility":"simplified"}]},{"featureType":"road.highway","elementType":"geometry","stylers":[{"visibility":"off"}]},{"featureType":"road.highway","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road.arterial","elementType":"geometry","stylers":[{"visibility":"off"}]},{"featureType":"road.arterial","elementType":"labels","stylers":[{"visibility":"off"}]},{"featureType":"road.arterial","elementType":"labels.text","stylers":[{"visibility":"off"}]},{"featureType":"road.arterial","elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"transit","elementType":"all","stylers":[{"visibility":"off"}]},{"featureType":"water","elementType":"all","stylers":[{"color":"#ffffff"},{"visibility":"simplified"}]}],
+
+            });
+        }
+
+        var client = new WebTorrent({tracker: {
+		    rtcConfig: {
+                "iceServers": [{
+                    "urls": "stun:global.stun.twilio.com:3478?transport=udp"
+                }, {
+                    "username": "8afc2823422c02506ec3eb13655b98ed4b45bc3b7ac8ccbc33d42f3dd3a665ae",
+                    "credential": "tQ+zyVVd4CS2BXlsfML7270N4RkttTiTAqge8KCwMC4=",
+                    "urls": "turn:global.turn.twilio.com:3478?transport=udp"
+                }, {
+                    "username": "8afc2823422c02506ec3eb13655b98ed4b45bc3b7ac8ccbc33d42f3dd3a665ae",
+                    "credential": "tQ+zyVVd4CS2BXlsfML7270N4RkttTiTAqge8KCwMC4=",
+                    "urls": "turn:global.turn.twilio.com:3478?transport=tcp"
+                }, {
+                    "username": "8afc2823422c02506ec3eb13655b98ed4b45bc3b7ac8ccbc33d42f3dd3a665ae",
+                    "credential": "tQ+zyVVd4CS2BXlsfML7270N4RkttTiTAqge8KCwMC4=",
+                    "urls": "turn:global.turn.twilio.com:443?transport=tcp"
+                }]
+            }
+		}});
+
+        $("#map").mouseover(function(event) {
+            if (markers.length > 0) {
+                goTransparent();
+            }
+        });
+        $("#logo").mouseover(function(event) {
+            goOpaque();
+        });
+        $("#progressStats").mouseover(function(event) {
+            goOpaque();
+        });
+        $("#downloadStats").mouseover(function(event) {
+            goOpaque();
+        });
+
+        client.on("error", function(error) {
+            console.log(error);
+        });
+
+        function download() {
+            displayLoading();
+
+            client.add("{{ magnet|safe }}", function(torrent) {
+                var file = torrent.files[0];
+
+                displayProgress(torrent.progress, torrent.timeRemaining);
+                displayStats(torrent.numPeers, torrent.uploaded, torrent.downloaded);
+
+                torrent.on("download", function(bytes) {
+                    if (torrent.progress == 1) {
+                        browserDownload(file);
+                    }
+
+                    updateProgress(torrent.progress, torrent.timeRemaining);
+                    updateStats(torrent.numPeers, torrent.uploaded, torrent.downloaded);
+                });
+
+                torrent.on("wire", function(wire) {
+                    if (wire.remoteAddress) {
+                        var getUrl = "https://freegeoip.net/json/" + wire.remoteAddress;
+                        $.get(getUrl, function(data) {
+                            var latpos = data.latitude;
+                            var longpos = data.longitude;
+
+                            if (latpos && longpos) {
+                                goTransparent();
+                                markers.push(new google.maps.Marker({
+                                    position: {lat: latpos, lng: longpos},
+                                    icon: "https://peerpiper.host/static/marker.png",
+                                    map: map
+                                }));
+                            }
+                        });
+                    }
+                });
+            });
+
+            return false;
+        }
+
+        function browserDownload(file) {
+            var a = document.createElement("a");
+            document.body.appendChild(a);
+            a.download = file.name;
+            file.getBlobURL(function(err, url) {
+                a.href = url;
+                a.click();
+            });
+        }
+
+        function goTransparent() {
+            $("#logo").fadeTo("fast", 0.5);
+            if (document.getElementById("progressStats").style["display"] != "none") {
+                $("#progressStats").fadeTo("fast", 0.5);
+            }
+            if (document.getElementById("downloadStats").style["display"] != "none") {
+                $("#downloadStats").fadeTo("fast", 0.5);
+            }
+            $("#map").fadeTo("fast", 1);
+        }
+
+        function goOpaque() {
+            $("#logo").fadeTo("fast", 1);
+            if (document.getElementById("progressStats").style["display"] != "none") {
+                $("#progressStats").fadeTo("fast", 1);
+            }
+            if (document.getElementById("downloadStats").style["display"] != "none" &&
+                document.getElementById("downloadStats").style["display"].length > 0) {
+
+                $("#downloadStats").fadeTo("fast", 1);
+            }
+            $("#map").fadeTo("fast", 0.3);
+        }
+
+        function displayLoading() {
+            document.getElementById("downloadButton").style["display"] = "none";
+            document.getElementById("loading").style["display"] = "block";
+        }
+
+        function displayProgress(progress, eta) {
+            document.getElementById("downloadForm").style["display"] = "none";
+            document.getElementById("progressStats").style["display"] = "block";
+            updateProgress(progress, eta);
+        }
+
+        function updateProgress(progress, eta) {
+            var etaParsed = eta/1000;
+
+            if (etaParsed > 3599) {
+                etaParsed = parseInt(etaParsed/60/60) + "h";
+            } else if (etaParsed > 59) {
+                etaParsed = parseInt(etaParsed/60) + "min";
+            } else {
+                etaParsed = parseInt(etaParsed) + "sec";
+            }
+
+            if (etaParsed == "Infinityh") {
+                etaParsed = "Infinity";
+            }
+
+            document.getElementById("progress").innerHTML = "Progress: " +
+                parseInt(progress * 100) + "%" +
+                "<br><br>" + "ETA: " + etaParsed;
+        }
+
+        function displayStats(peers, uploaded, downloaded) {
+            document.getElementById("downloadStats").style["display"] = "block";
+            updateStats(peers, uploaded, downloaded);
+        }
+
+        function updateStats(peers, uploaded, downloaded) {
+            var uploadedParsed = parseInt(uploaded/1024);
+            var downloadedParsed = parseInt(downloaded/1024);
+
+            if (uploadedParsed > 1023) {
+                uploadedParsed = parseFloat(uploadedParsed/1024).toFixed(2) + "MB";
+            } else {
+                uploadedParsed = uploadedParsed + "KB";
+            }
+
+            if (downloadedParsed > 1023) {
+                downloadedParsed = parseFloat(downloadedParsed/1024).toFixed(2) + "MB";
+            } else {
+                downloadedParsed = downloadedParsed + "KB";
+            }
+
+            document.getElementById("stats").innerHTML = "Peers: " + peers +
+                "<br><br>" + "Up: " + uploadedParsed +
+                "<br><br>" + "Down: " + downloadedParsed;
+        }
+    </script>
+</body>
