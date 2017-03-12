@@ -1,5 +1,6 @@
 from flask import g
 from redis import StrictRedis
+import os
 
 from .app import app
 
