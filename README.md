@@ -23,7 +23,7 @@ Using [dokku](http://dokku.viewdocs.io/dokku/):
 
 ### License
 
-Copyright &copy; 2016 Adrian Chifor, Jose Diez
+Copyright &copy; 2018 Adrian Chifor, Jose Diez
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
