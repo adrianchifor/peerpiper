@@ -1,4 +1,4 @@
-# [PeerPiper](https://peerpiper.host)
+# PeerPiper
 
 Free, fast and simple P2P file transfer using WebTorrent.
 
