@@ -2,6 +2,8 @@
 
 Free, fast and simple P2P file transfer using WebTorrent.
 
+<img src="./peerpiper.png" width="512">
+
 The app was created in 24h at TechCrunch Disrupt London Hackathon 2016. For more information check out the [Devpost project page](https://devpost.com/software/peerpiper).
 
 Uses Redis for storing file names and magnet links.
